@@ -1,3 +1,5 @@
+# schemas = validação
+
 from pydantic import BaseModel, Field
 
 class CursoEntrada(BaseModel):

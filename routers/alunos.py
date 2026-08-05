@@ -1,7 +1,7 @@
 # routers/alunos.py
 
 from fastapi import APIRouter, HTTPException
-from models.aluno import AlunoEntrada, AlunoPatch, AlunoResposta
+from schemas.aluno import AlunoEntrada, AlunoPatch, AlunoResposta
 
 router = APIRouter(prefix='/alunos', tags=['Alunos'])
 

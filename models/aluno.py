@@ -1,17 +1,11 @@
-from pydantic import BaseModel, Field
+from sqlalchemy.orm import Mapped, mapped_column
+from database import Base
 
-class AlunoEntrada(BaseModel):
-    nome:str = Field(min_length=3)
-    idade:int = Field(ge=16)
-    ativo: bool = True
 
-class AlunoResposta(BaseModel):
-    id: int
-    nome: str
-    idade: int
-    ativo: bool
+class Aluno(Base):
+    __tablename__ = "alunos"
 
-class AlunoPatch(BaseModel):
-    nome: str | None = Field(default=None, min_length=3)
-    idade: int | None = Field(default=None, ge=16)
-    ativo: bool | None = None
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str]
+    idade: Mapped[int]
+    ativo: Mapped[bool] = mapped_column(default=True)
