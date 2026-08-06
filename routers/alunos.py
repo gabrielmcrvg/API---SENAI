@@ -1,6 +1,8 @@
 # routers/alunos.py
 
 from fastapi import APIRouter, HTTPException
+from database import SessionLocal
+from models.aluno import Aluno
 from schemas.aluno import AlunoEntrada, AlunoPatch, AlunoResposta
 
 router = APIRouter(prefix='/alunos', tags=['Alunos'])
@@ -15,56 +17,66 @@ alunos = [
 
 @router.get('/listar_alunos', response_model=list[AlunoResposta])
 def listar_alunos(ativo:bool | None = None, limite:int=10):
-    resultado = alunos
-    if ativo is not None:
-        resultado = [a for a in resultado if a['ativo'] == ativo]
-    return resultado[:limite]
+    with SessionLocal() as session:
+        query = session.query(Aluno)
+        if ativo is not None:
+            query = query.filter(Aluno.ativo == ativo)
+        return session.query(Aluno).all()
 
 @router.get('/{aluno_id}', response_model=AlunoResposta)
 def buscar_aluno(aluno_id:int):
-    for aluno in alunos:
-        if aluno['id'] == aluno_id:
-            return aluno
-    raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+    with SessionLocal() as session:
+        aluno = session.get(Aluno, aluno_id) # dentro da tabela aluno, pega o aluno_id
+        if aluno is None:
+            raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+        return aluno
 
 # =-= POST =-=
 
-@router.post('/criar_aluno', status_code=201)
-def criar_aluno(aluno: AlunoEntrada):
-    novo = aluno.model_dump()
-    novo['id'] = max([a['id'] for a in alunos], default=0) + 1
-    alunos.append(novo)
-    return novo
+@router.post('/criar_aluno', response_model=AlunoResposta, status_code=201)
+def criar_aluno(dados: AlunoEntrada):
+    with SessionLocal() as session:
+        aluno = Aluno(**dados.model_dump())
+        session.add(aluno)
+        session.commit() # pra gravar de fato o objeto na lista
+        return aluno
+    
+# =-= PUT =-= TROCA TODOS DADOS
 
-# =-= PUT =-=
-
-@router.put('/{aluno_id}')
+@router.put('/{aluno_id}', response_model=AlunoResposta)
 def atualizar_aluno(aluno_id: int, dados: AlunoEntrada):
-    for indice, aluno in enumerate(alunos): # indice = posição, aluno = dicionario
-        if aluno['id'] == aluno_id:
-            atualizado = dados.model_dump()
-            atualizado['id'] = aluno_id
-            alunos[indice] = atualizado
-            return atualizado
-    raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+    with SessionLocal() as session:
+        aluno = session.get(Aluno, aluno_id)
+        if aluno is None:
+            raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+        aluno.nome = dados.nome
+        aluno.idade = dados.idade
+        aluno.ativo = dados.ativo
+        session.commit()
+        return aluno
 
-# =-= PATCH =-=
+# =-= PATCH =-= TROCA UM DADO ESPECIFICO
 
 @router.patch('/{aluno_id}')
 def alterar_aluno(aluno_id: int, dados: AlunoPatch):
-    for aluno in alunos:
-        if aluno['id'] == aluno_id:
-            mudancas = dados.model_dump(exclude_unset=True) # exclude unset só mexe no que eu pedi pra mexer, ignora o resto
-            aluno.update(mudancas)
-            return aluno
-    raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+    with SessionLocal() as session:
+        aluno = session.get(Aluno, aluno_id)
+        if aluno is None:
+            raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+        mudancas = dados.model_dump(exclude_unset=True)
+        for campo, valor in mudancas.item():
+            setattr(aluno, campo, valor)
+        session.commit()
+        return aluno
 
 # =-= DELETE =-=
 
 @router.delete('/{aluno_id}')
 def remover_aluno(aluno_id: int):
-    for indice, aluno in enumerate(alunos):
-        if aluno['id'] == aluno_id:
-            alunos.pop(indice)
-            return {'mensagem': 'Aluno removido'}
-    raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+    with SessionLocal() as session:
+        aluno = session.get(Aluno, aluno_id)
+        if aluno is None:
+            raise HTTPException(status_code=404, detail='Aluno não encontrado!')
+        session.delete(aluno)
+        session.commit()
+        return {'Mensagem': 'Aluno removido com sucesso!'}

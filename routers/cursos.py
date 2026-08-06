@@ -5,7 +5,8 @@ from schemas.curso import CursoEntrada, CursoResposta
 
 router = APIRouter(prefix='/cursos', tags=['Cursos'])
 
-cursos = [{'id': 1, 'nome': 'Python', 'carga_horaria': 15}, {'id': 2, 'nome': 'Excel', 'carga_horaria': 25}]
+cursos = [{'id': 1, 'nome': 'Python', 'carga_horaria': 15},
+          {'id': 2, 'nome': 'Excel', 'carga_horaria': 25}]
 
 # =-= GET =-=
 
