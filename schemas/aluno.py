@@ -5,7 +5,8 @@ from pydantic import BaseModel, Field, ConfigDict
 class AlunoEntrada(BaseModel):
     nome:str = Field(min_length=3)
     idade:int = Field(ge=16)
-    ativo: bool = True
+    ativo:bool = True
+    curso_id:int
 
 class AlunoResposta(BaseModel):
     model_config = ConfigDict(from_attributes=True)

@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from database import SessionLocal
 from models.aluno import Aluno
+from models.curso import Curso
 from schemas.aluno import AlunoEntrada, AlunoPatch, AlunoResposta
 
 router = APIRouter(prefix='/alunos', tags=['Alunos'])
@@ -36,6 +37,9 @@ def buscar_aluno(aluno_id:int):
 @router.post('/criar_aluno', response_model=AlunoResposta, status_code=201)
 def criar_aluno(dados: AlunoEntrada):
     with SessionLocal() as session:
+        curso = session.get(Curso, dados.curso_id)
+        if curso is None:
+            raise HTTPException(status_code=400, detail="Curso informado não existe!")
         aluno = Aluno(**dados.model_dump())
         session.add(aluno)
         session.commit() # pra gravar de fato o objeto na lista

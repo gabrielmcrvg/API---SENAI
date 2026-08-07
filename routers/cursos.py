@@ -1,7 +1,9 @@
 # routers/cursos.py
-
+from sqlalchemy.orm import selectinload
 from fastapi import APIRouter, HTTPException
-from schemas.curso import CursoEntrada, CursoResposta
+from database import SessionLocal
+from models.curso import Curso
+from schemas.curso import CursoEntrada, CursoResposta, CursoComAlunos
 
 router = APIRouter(prefix='/cursos', tags=['Cursos'])
 
@@ -12,22 +14,25 @@ cursos = [{'id': 1, 'nome': 'Python', 'carga_horaria': 15},
 
 @router.get('', response_model=list[CursoResposta])
 def listar_cursos():
-    return cursos
-
-@router.get('/{curso_id}', response_model=CursoResposta)
+    with SessionLocal() as session:
+        return session.query(Curso).all()
+    
+@router.get('/{curso_id}', response_model=CursoComAlunos)
 def buscar_curso(curso_id:int):
-    for curso in cursos:
-        if curso['id'] == curso_id:
-            return curso
-    raise HTTPException(status_code=404, detail='Curso não encontrado!')
+    with SessionLocal() as session:
+        curso = session.query(Curso).options(selectinload(Curso.alunos)).get(curso_id)
+        if curso is None:
+            raise HTTPException(status_code=404, detail='Curso não encontrado!')
+        return curso
 
 # =-= POST =-=
 
 @router.post('', response_model=CursoResposta, status_code=201)
-def criar_cursos(curso: CursoEntrada):
-    novo = curso.model_dump()
-    novo['id'] = max([c['id'] for c in cursos], default=0) + 1
-    cursos.append(novo)
-    return novo
+def criar_cursos(dados: CursoEntrada):
+    with SessionLocal() as session:
+        curso = Curso(**dados.model_dump())
+        session.add(curso)
+        session.commit()
+        return curso
 
     

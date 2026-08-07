@@ -4,7 +4,7 @@ from models.curso import Curso
 
 session = SessionLocal()
 
-novo_aluno = Aluno(nome="Gabriel", idade=23)
+novo_aluno = Aluno(nome="Gabriel", idade=23, curso_id=3)
 session.add(novo_aluno)
 session.commit()
 
@@ -13,7 +13,7 @@ session.close()
 
 session = SessionLocal()
 
-novo_curso = Curso(nome="Engenharia de Software", carga_horaria=3600)
+novo_curso = Curso(nome="HTML", carga_horaria=360)
 session.add(novo_curso)
 session.commit()
 
