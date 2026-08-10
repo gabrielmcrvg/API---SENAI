@@ -1,14 +1,11 @@
 # routers/cursos.py
 from sqlalchemy.orm import selectinload
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from database import SessionLocal
 from models.curso import Curso
 from schemas.curso import CursoEntrada, CursoResposta, CursoComAlunos
 
 router = APIRouter(prefix='/cursos', tags=['Cursos'])
-
-cursos = [{'id': 1, 'nome': 'Python', 'carga_horaria': 15},
-          {'id': 2, 'nome': 'Excel', 'carga_horaria': 25}]
 
 # =-= GET =-=
 
@@ -20,9 +17,11 @@ def listar_cursos():
 @router.get('/{curso_id}', response_model=CursoComAlunos)
 def buscar_curso(curso_id:int):
     with SessionLocal() as session:
-        curso = session.query(Curso).options(selectinload(Curso.alunos)).get(curso_id)
+        curso = session.query(Curso).options(selectinload(Curso.alunos)).get(curso_id) # faz uma busca na tabela cursos, me traz tambem os alunos desse curso
         if curso is None:
-            raise HTTPException(status_code=404, detail='Curso não encontrado!')
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Curso não encontrado!')
+        if curso.alunos:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Não é possivel realizar exclusão, Há alunos matriculados neste curso!")
         return curso
 
 # =-= POST =-=
@@ -35,4 +34,15 @@ def criar_cursos(dados: CursoEntrada):
         session.commit()
         return curso
 
-    
+# =-= DELETE =-=
+
+@router.delete('/{curso_id}')
+def deletar_curso(curso_id:int):
+    with SessionLocal() as session:
+        curso = session.get(Curso, curso_id)
+        if curso is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curso não encontrado")
+        if curso.alunos:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="O curso tem alunos matriculados")
+        session.delete(curso)
+        session.commit()

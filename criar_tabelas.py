@@ -1,5 +1,6 @@
 from database import Base, engine
-from models.aluno import Aluno
-from models.curso import Curso
+import models.aluno
+import models.curso
+import models.matriculas
 
 Base.metadata.create_all(bind=engine) # <- olha todos os models que herdam de Base
