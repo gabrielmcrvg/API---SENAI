@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from database import SessionLocal
 from models.aluno import Aluno
 from models.curso import Curso
-from schemas.aluno import AlunoEntrada, AlunoPatch, AlunoResposta
+from schemas.aluno import AlunoEntrada, AlunoPatch, AlunoResposta, MatriculaEmLote, AlunosComCurso
 from utils.utils import obter_ou_404
 from excecoes import RecursoNaoEncontrado
 
@@ -28,7 +28,7 @@ def buscar_aluno(aluno_id:int):
 
 # =-= POST =-=
 
-@router.post('/criar_aluno', response_model=AlunoResposta, status_code=status.HTTP_201_CREATED)
+@router.post('/criar_aluno', response_model=AlunoResposta, status_code=201)
 def criar_aluno(dados: AlunoEntrada):
     with SessionLocal() as session:
         curso = session.get(Curso, dados.curso_id)
@@ -38,6 +38,21 @@ def criar_aluno(dados: AlunoEntrada):
         session.add(aluno)
         session.commit() # pra gravar de fato o objeto na lista
         return aluno
+
+@router.post("/lote", response_model=list[AlunosComCurso], status_code=201)
+def criar_alunos_em_lote(dados: MatriculaEmLote):
+    with SessionLocal() as session:
+        curso = session.get(Curso, dados.curso_id)
+        if curso is None:
+            raise RecursoNaoEncontrado("Curso")
+        alunos = []
+        for a in dados.alunos:
+            aluno = Aluno(**a.model_dump(), curso_id=curso.id)
+            aluno.cursos.append(curso)
+            alunos.append(aluno)
+        session.add_all(alunos)
+        session.commit()
+        return alunos
     
 # =-= PUT =-= TROCA TODOS DADOS
 

@@ -21,4 +21,4 @@ class CursoComAlunos(BaseModel):
     id:int
     nome:str
     carga_horaria:int
-    alunos: list[AlunoResumo]
+    alunos: list[AlunoResumo] = []

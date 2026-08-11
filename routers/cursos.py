@@ -20,19 +20,17 @@ def buscar_curso(curso_id:int):
         curso = session.query(Curso).options(selectinload(Curso.alunos)).get(curso_id) # faz uma busca na tabela cursos, me traz tambem os alunos desse curso
         if curso is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Curso não encontrado!')
-        if curso.alunos:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Não é possivel realizar exclusão, Há alunos matriculados neste curso!")
         return curso
 
 # =-= POST =-=
 
-@router.post('', response_model=CursoResposta, status_code=201)
-def criar_cursos(dados: CursoEntrada):
+@router.post("/{curso_id}", response_model=list[CursoResposta], status_code=201)
+def criar_curso(dados: list[CursoEntrada]):
     with SessionLocal() as session:
-        curso = Curso(**dados.model_dump())
-        session.add(curso)
+        cursos = [Curso(**d.model_dump()) for d in dados]
+        session.add_all(cursos)
         session.commit()
-        return curso
+        return cursos
 
 # =-= DELETE =-=
 

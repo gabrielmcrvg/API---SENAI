@@ -8,4 +8,4 @@ class Curso(Base):
     id: Mapped[int] = mapped_column(primary_key=True) # Mapped quer dizer que o dado é mapeado, responsabilidade do BD
     nome: Mapped[str]
     carga_horaria: Mapped[int]
-    alunos: Mapped[list["Aluno"]] = relationship(secondary=matriculas, back_populates="curso") # type: ignore
+    alunos: Mapped[list["Aluno"]] = relationship(secondary=matriculas, back_populates="cursos") # type: ignore
