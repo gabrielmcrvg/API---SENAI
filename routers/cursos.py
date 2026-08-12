@@ -13,19 +13,19 @@ router = APIRouter(prefix='/cursos', tags=['Cursos'])
 def listar_cursos():
     with SessionLocal() as session:
         return session.query(Curso).all()
-    
+
 @router.get('/{curso_id}', response_model=CursoComAlunos)
-def buscar_curso(curso_id:int):
+def buscar_curso(curso_id: int):
     with SessionLocal() as session:
-        curso = session.query(Curso).options(selectinload(Curso.alunos)).get(curso_id) # faz uma busca na tabela cursos, me traz tambem os alunos desse curso
+        curso = session.get(Curso, curso_id, options=[selectinload(Curso.alunos)])
         if curso is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Curso não encontrado!')
         return curso
 
 # =-= POST =-=
 
-@router.post("/{curso_id}", response_model=list[CursoResposta], status_code=201)
-def criar_curso(dados: list[CursoEntrada]):
+@router.post("", response_model=list[CursoResposta], status_code=201)
+def criar_cursos(dados: list[CursoEntrada]):
     with SessionLocal() as session:
         cursos = [Curso(**d.model_dump()) for d in dados]
         session.add_all(cursos)
@@ -34,8 +34,8 @@ def criar_curso(dados: list[CursoEntrada]):
 
 # =-= DELETE =-=
 
-@router.delete('/{curso_id}')
-def deletar_curso(curso_id:int):
+@router.delete('/{curso_id}', status_code=status.HTTP_204_NO_CONTENT)
+def deletar_curso(curso_id: int):
     with SessionLocal() as session:
         curso = session.get(Curso, curso_id)
         if curso is None:
