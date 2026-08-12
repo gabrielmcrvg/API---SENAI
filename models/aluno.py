@@ -11,4 +11,4 @@ class Aluno(Base):
     idade: Mapped[int]
     ativo: Mapped[bool] = mapped_column(default=True)
     curso_id: Mapped[int] = mapped_column(ForeignKey("cursos.id"))
-    cursos: Mapped[list["Curso"]] = relationship(back_populates="alunos") # type: ignore
+    cursos: Mapped[list["Curso"]] = relationship(secondary=matriculas, back_populates="alunos") # type: ignore

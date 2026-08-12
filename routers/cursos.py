@@ -1,7 +1,9 @@
 # routers/cursos.py
-from sqlalchemy.orm import selectinload
-from fastapi import APIRouter, HTTPException, status
-from database import SessionLocal
+from typing import Annotated
+
+from sqlalchemy.orm import Session, selectinload
+from fastapi import APIRouter, Depends, HTTPException, status
+from database import SessionLocal, get_db
 from models.curso import Curso
 from schemas.curso import CursoEntrada, CursoResposta, CursoComAlunos
 
@@ -10,37 +12,33 @@ router = APIRouter(prefix='/cursos', tags=['Cursos'])
 # =-= GET =-=
 
 @router.get('', response_model=list[CursoResposta])
-def listar_cursos():
-    with SessionLocal() as session:
-        return session.query(Curso).all()
+def listar_cursos(session: Annotated[Session, Depends(get_db)], ):
+    return session.query(Curso).all()
 
 @router.get('/{curso_id}', response_model=CursoComAlunos)
-def buscar_curso(curso_id: int):
-    with SessionLocal() as session:
-        curso = session.get(Curso, curso_id, options=[selectinload(Curso.alunos)])
-        if curso is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Curso não encontrado!')
-        return curso
+def buscar_curso(session: Annotated[Session, Depends(get_db)], curso_id: int):
+    curso = session.get(Curso, curso_id, options=[selectinload(Curso.alunos)])
+    if curso is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Curso não encontrado!')
+    return curso
 
 # =-= POST =-=
 
 @router.post("", response_model=list[CursoResposta], status_code=201)
-def criar_cursos(dados: list[CursoEntrada]):
-    with SessionLocal() as session:
-        cursos = [Curso(**d.model_dump()) for d in dados]
-        session.add_all(cursos)
-        session.commit()
-        return cursos
+def criar_cursos(session: Annotated[Session, Depends(get_db)], dados: list[CursoEntrada]):
+    cursos = [Curso(**d.model_dump()) for d in dados]
+    session.add_all(cursos)
+    session.commit()
+    return cursos
 
 # =-= DELETE =-=
 
 @router.delete('/{curso_id}', status_code=status.HTTP_204_NO_CONTENT)
-def deletar_curso(curso_id: int):
-    with SessionLocal() as session:
-        curso = session.get(Curso, curso_id)
-        if curso is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curso não encontrado")
-        if curso.alunos:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="O curso tem alunos matriculados")
-        session.delete(curso)
-        session.commit()
+def deletar_curso(session: Annotated[Session, Depends(get_db)], curso_id: int):
+    curso = session.get(Curso, curso_id)
+    if curso is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curso não encontrado")
+    if curso.alunos:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="O curso tem alunos matriculados")
+    session.delete(curso)
+    session.commit()

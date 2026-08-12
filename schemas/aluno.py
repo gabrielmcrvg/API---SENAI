@@ -36,5 +36,4 @@ class AlunoEntradaLote(BaseModel):
     ativo: bool = True
 
 class MatriculaEmLote(BaseModel):
-    curso_id: int
     alunos: list[AlunoEntradaLote]
