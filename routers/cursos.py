@@ -1,12 +1,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import selectinload
 
 from database import SessionDep
 from dependencias import Paginacao
 from models.curso import Curso
 from schemas.curso import CursoEntrada, CursoResposta, CursoComAlunos
-from utils.utils import obter_ou_404, bad_request
+from utils.utils import obter_ou_404
 
 router = APIRouter(prefix='/cursos', tags=['Cursos'])
 
@@ -18,9 +17,8 @@ def listar_cursos(session: SessionDep, pag: Paginacao = Depends()):
 
 @router.get('/{curso_id}', response_model=CursoComAlunos)
 def buscar_curso(session: SessionDep, curso_id: int):
-    curso = session.get(Curso, curso_id, options=[selectinload(Curso.alunos)])
-    curso_existe = obter_ou_404()
-    return curso_existe
+    curso = obter_ou_404(session, Curso, curso_id, "Curso")
+    return curso
 
 # =-= POST =-=
 
