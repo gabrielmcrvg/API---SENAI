@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from routers import alunos, cursos
+from routers import alunos, auth, cursos
 from models.aluno import Aluno
 from models.curso import Curso
 from excecoes import RecursoNaoEncontrado
@@ -9,6 +9,7 @@ app = FastAPI(title='API - SENAI', tags=['Status da Aplicação'])
 
 app.include_router(alunos.router)
 app.include_router(cursos.router)
+app.include_router(auth.router)
 
 @app.get('/')
 def raiz():
