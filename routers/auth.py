@@ -3,12 +3,18 @@ from fastapi.security import OAuth2PasswordRequestForm
 from database import SessionDep
 from models.usuario import Usuario
 from schemas.usuario import UsuarioEntrada, UsuarioResposta
-from seguranca import gerar_hash
+from seguranca import UsuarioAtual, gerar_hash
 from typing import Annotated
 from schemas.usuario import Token
 from seguranca import verificar_senha, criar_token
 
 router = APIRouter(tags=['Autenticacao'])
+
+# =-= GET =-=
+
+@router.get("/eu", response_model=UsuarioResposta)
+def eu(usuario: UsuarioAtual):
+    return usuario
 
 # =-= POST =-=
 
@@ -26,5 +32,6 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: S
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario ou senha invalidos", headers={"WWW-Authenticate": "Bearer"})
     token = criar_token({"sub": usuario.username})
     return Token(access_token=token, token_type="bearer")
+
 
 

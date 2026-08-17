@@ -4,8 +4,10 @@ from dependencias import Paginacao
 from excecoes import RecursoNaoEncontrado
 from models.aluno import Aluno
 from models.curso import Curso
+from models.usuario import Usuario
 from schemas.aluno import AlunoEntrada, AlunoPatch, AlunoResposta, MatriculaEmLote, AlunosComCurso
 from utils.utils import obter_ou_404
+from seguranca import AdminAtual, UsuarioAtual
 
 router = APIRouter(prefix='/alunos', tags=['Alunos'])
 
@@ -28,7 +30,7 @@ def buscar_aluno(session: SessionDep, aluno_id: int):
 # =-= POST =-=
 
 @router.post("/criar_aluno", response_model=AlunoResposta, status_code=status.HTTP_201_CREATED)
-def criar_aluno(session: SessionDep, dados: AlunoEntrada):
+def criar_aluno(session: SessionDep, dados: AlunoEntrada, usuario: UsuarioAtual):
     curso_existe = obter_ou_404(session, Curso, dados.curso_id, "Curso")
     aluno = Aluno(**dados.model_dump())
     aluno.cursos.append(curso_existe)
@@ -76,7 +78,7 @@ def alterar_aluno(session: SessionDep, aluno_id: int, dados: AlunoPatch):
 # =-= DELETE =-=
 
 @router.delete('/{aluno_id}', status_code=status.HTTP_204_NO_CONTENT)
-def remover_aluno(session: SessionDep, aluno_id: int):
+def remover_aluno(session: SessionDep, aluno_id: int, usuario: AdminAtual):
     aluno = session.get(Aluno, aluno_id)
     if aluno is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Aluno não encontrado!')

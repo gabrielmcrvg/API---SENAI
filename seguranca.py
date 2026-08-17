@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from pwdlib import PasswordHash
 from datetime import datetime, timedelta, timezone
 import jwt
@@ -17,7 +17,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256" # Algoritmo da assinatura/Token
 
 pwd_hash = PasswordHash.recommended()
-OAuth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+OAuth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 def gerar_hash(senha: str) -> str:
     return pwd_hash.hash(senha)
@@ -31,5 +31,28 @@ def criar_token(dados: dict) -> str:
     payload.update({"exp": exp})
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-def usuario_atual(token: Annotated[str, Depends(OAuth2_scheme)], session: SessionDep) -> Usuario: # decodifica o token, pega o sub(username), busca o usuario no banco, se algo falhar -> 401
-    
+def usuario_atual(session: SessionDep, token:str = Depends(OAuth2_scheme)) -> Usuario:
+    erro = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Nao foi possivel validar as credenciais",
+        headers={"WWW-Authenticate": "Bearer"})
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise erro
+    except jwt.PyJWTError:
+        raise erro
+    usuario = session.query(Usuario).filter(Usuario.username == username).first()
+    if usuario is None:
+        raise erro
+    return usuario
+
+UsuarioAtual = Annotated[Usuario, Depends(usuario_atual)]
+
+def apenas_admin(usuario: UsuarioAtual) -> Usuario:
+    if usuario.papel != "Admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Somente a Diretoria!")
+    return usuario
+
+AdminAtual = Annotated[Usuario, Depends(apenas_admin)]
