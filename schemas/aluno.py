@@ -6,6 +6,13 @@ class AlunoEntrada(BaseModel):
     ativo: bool = True
     curso_id: int
 
+class AlunoEntradaLote(BaseModel):
+    nome: str = Field(min_length=3)
+    idade: int = Field(ge=16)
+    ativo: bool = True   
+class MatriculaEmLote(BaseModel):
+    alunos: list[AlunoEntradaLote]
+
 class AlunoResposta(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -30,10 +37,3 @@ class AlunosComCurso(BaseModel):
     ativo: bool
     cursos: list[CursoResumo] = []
 
-class AlunoEntradaLote(BaseModel):
-    nome: str = Field(min_length=3)
-    idade: int = Field(ge=16)
-    ativo: bool = True
-
-class MatriculaEmLote(BaseModel):
-    alunos: list[AlunoEntradaLote]

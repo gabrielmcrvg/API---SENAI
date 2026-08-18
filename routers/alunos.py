@@ -21,7 +21,7 @@ def listar_alunos(session: SessionDep, pag: Paginacao = Depends(), ativo: bool |
     return session.query(Aluno).offset(pag.skip).limit(pag.limit).all()
 
 @router.get('/{aluno_id}', response_model=AlunoResposta)
-def buscar_aluno(session: SessionDep, aluno_id: int):
+def buscar_aluno(session: SessionDep, aluno_id: int, usuario: UsuarioAtual):
     aluno = session.get(Aluno, aluno_id)
     if aluno is None:
         raise RecursoNaoEncontrado("Aluno")
@@ -30,16 +30,16 @@ def buscar_aluno(session: SessionDep, aluno_id: int):
 # =-= POST =-=
 
 @router.post("/criar_aluno", response_model=AlunoResposta, status_code=status.HTTP_201_CREATED)
-def criar_aluno(session: SessionDep, dados: AlunoEntrada, usuario: UsuarioAtual):
+def criar_aluno(session: SessionDep, dados: AlunoEntrada, usuario: AdminAtual):
     curso_existe = obter_ou_404(session, Curso, dados.curso_id, "Curso")
-    aluno = Aluno(**dados.model_dump())
+    aluno = Aluno(**dados.model_dump(exclude={"curso_id"}))
     aluno.cursos.append(curso_existe)
     session.add(aluno)
     session.commit()
     return aluno
 
 @router.post("/lote/{curso_id}", response_model=list[AlunosComCurso], status_code=status.HTTP_201_CREATED)
-def criar_alunos_em_lote(session: SessionDep, curso_id: int, dados: MatriculaEmLote):
+def criar_alunos_em_lote(session: SessionDep, curso_id: int, dados: MatriculaEmLote, usuario: AdminAtual):
     curso_existe = obter_ou_404(session, Curso, curso_id, "Curso")
     alunos = [Aluno(**a.model_dump()) for a in dados.alunos]
     for aluno in alunos:
@@ -51,21 +51,22 @@ def criar_alunos_em_lote(session: SessionDep, curso_id: int, dados: MatriculaEmL
 # =-= PUT =-= TROCA TODOS DADOS
 
 @router.put('/{aluno_id}', response_model=AlunoResposta)
-def atualizar_aluno(session: SessionDep, aluno_id: int, dados: AlunoEntrada):
+def atualizar_aluno(session: SessionDep, aluno_id: int, dados: AlunoEntrada, usuario: AdminAtual):
     aluno = session.get(Aluno, aluno_id)
     if aluno is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Aluno não encontrado!')
+    curso_existe = obter_ou_404(session, Curso, dados.curso_id, "Curso")
     aluno.nome = dados.nome
     aluno.idade = dados.idade
     aluno.ativo = dados.ativo
-    aluno.curso_id = dados.curso_id
+    aluno.cursos = [curso_existe]
     session.commit()
     return aluno
 
 # =-= PATCH =-= TROCA UM DADO ESPECIFICO
 
 @router.patch('/{aluno_id}', response_model=AlunoResposta)
-def alterar_aluno(session: SessionDep, aluno_id: int, dados: AlunoPatch):
+def alterar_aluno(session: SessionDep, aluno_id: int, dados: AlunoPatch, usuario: AdminAtual):
     aluno = session.get(Aluno, aluno_id)
     if aluno is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Aluno não encontrado!')

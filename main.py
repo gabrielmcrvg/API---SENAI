@@ -1,26 +1,26 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from routers import alunos, auth, cursos
-from models.aluno import Aluno
-from models.curso import Curso
-from models.usuario import Usuario
+from routers import alunos, cursos, auth
+from models import aluno, curso, usuario
 from excecoes import RecursoNaoEncontrado
 
-app = FastAPI(title='API - SENAI', tags=['Status da Aplicação'])
+
+
+app = FastAPI(title="API - SENAI")
 
 app.include_router(alunos.router)
 app.include_router(cursos.router)
 app.include_router(auth.router)
 
-@app.get('/')
+@app.get("/raiz")
 def raiz():
-    return {'Mensagem': 'API de Escola no ar'}
+    return {"Mensagem": "API da Escola no ar!"}
 
-@app.get('/status')
+@app.get("/status")
 def status():
-    return {'status': 'OK', 'Versão': '1.0'}
+    return{"status":"OK", "Versão":"1.0"}
 
 @app.exception_handler(RecursoNaoEncontrado)
-def tratar_nao_encontrado(request: Request, exc: RecursoNaoEncontrado):
-    return JSONResponse(status_code=404, content={"Mensagem": f"{exc} não encontrado(a)"} if str(exc) else {"Mensagem": "Objeto não encontrado"})
-
+def tratar_nao_encontrado(request, exc):
+    return JSONResponse(status_code=404,
+                        content={"detail":f"{exc.recurso} nao encontrado!"})
