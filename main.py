@@ -1,17 +1,16 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from routers import alunos, cursos, auth, arquivos
+from routers import alunos, cursos, auth, arquivos, enderecos
 from models import aluno, curso, usuario
 from excecoes import RecursoNaoEncontrado
 
-
-
-app = FastAPI(title="API - SENAI")
+app = FastAPI(title="API - SENAI", description="Gerencia alunos, cursos e matrículas.", version="1.0.0")
 
 app.include_router(alunos.router)
 app.include_router(cursos.router)
 app.include_router(auth.router)
 app.include_router(arquivos.router)
+app.include_router(enderecos.router)
 
 @app.get("/raiz")
 def raiz():
@@ -19,7 +18,7 @@ def raiz():
 
 @app.get("/status")
 def status():
-    return{"status":"OK", "Versão":"1.0"}
+    return{"status":"OK", "Versão":"1.0.0"}
 
 @app.exception_handler(RecursoNaoEncontrado)
 def tratar_nao_encontrado(request, exc):

@@ -9,6 +9,7 @@ from models.aluno import Aluno
 from models.curso import Curso
 from models.usuario import Usuario
 from schemas.aluno import AlunoEntrada, AlunoPatch, AlunoResposta, MatriculaEmLote, AlunosComCurso
+from services.email import enviar_confirmacao
 from utils.utils import obter_ou_404
 from seguranca import AdminAtual, UsuarioAtual
 
@@ -27,7 +28,7 @@ def listar_alunos(session: SessionDep, usuario: UsuarioAtual, pag: Paginacao = D
         query = query.filter(Aluno.ativo == ativo)
     return query.offset(pag.skip).limit(pag.limit).all()
 
-@router.get('/{aluno_id}', response_model=AlunoResposta)
+@router.get('/{aluno_id}', response_model=AlunosComCurso)
 def buscar_aluno(session: SessionDep, aluno_id: int, usuario: UsuarioAtual):
     aluno = session.get(Aluno, aluno_id)
     if aluno is None:
@@ -36,11 +37,9 @@ def buscar_aluno(session: SessionDep, aluno_id: int, usuario: UsuarioAtual):
 
 # =-= POST =-=
 
-@router.post("/criar_aluno", response_model=AlunoResposta, status_code=status.HTTP_201_CREATED)
+@router.post("/criar_aluno", response_model=AlunoResposta, status_code=status.HTTP_201_CREATED, tags=["Alunos"], summary="Cria um novo aluno.", description="Cadastra um aluno. Idade mínima: 16.")
 def criar_aluno(session: SessionDep, dados: AlunoEntrada, usuario: AdminAtual):
-    curso_existe = obter_ou_404(session, Curso, dados.curso_id, "Curso")
-    aluno = Aluno(**dados.model_dump(exclude={"curso_id"}))
-    aluno.cursos.append(curso_existe)
+    aluno = Aluno(**dados.model_dump())
     session.add(aluno)
     session.commit()
     return aluno
@@ -55,6 +54,20 @@ def criar_alunos_em_lote(session: SessionDep, curso_id: int, dados: MatriculaEmL
     session.commit()
     return alunos
 
+@router.post("/{aluno_id}")
+async def matricular(aluno_id: int, curso_id: int, session: SessionDep):
+    aluno = obter_ou_404(session, Aluno, aluno_id, "Aluno")
+    curso = obter_ou_404(session, Curso, curso_id, "Curso")
+
+    aluno.cursos.append(curso)
+    session.commit()
+
+    try:
+        await enviar_confirmacao(aluno.email, aluno.nome)
+    except Exception:
+        return {"Mensagem": "Matriculado, mas falha ao enviar e-mail de confirmação"}
+    return {"Mensagem": "Matriculado e Notificado"}
+
 @router.post("/{aluno_id}/foto")
 def upload_foto(aluno_id: int, arquivo: UploadFile, session: SessionDep, usuario: AdminAtual):
     aluno = obter_ou_404(session, Aluno, aluno_id, "Aluno")
@@ -67,6 +80,8 @@ def upload_foto(aluno_id: int, arquivo: UploadFile, session: SessionDep, usuario
     session.commit()
     return {"aluno": aluno.nome, "foto": aluno.foto}
 
+
+
 # =-= PUT =-= TROCA TODOS DADOS
 
 @router.put('/{aluno_id}', response_model=AlunoResposta)
@@ -74,11 +89,9 @@ def atualizar_aluno(session: SessionDep, aluno_id: int, dados: AlunoEntrada, usu
     aluno = session.get(Aluno, aluno_id)
     if aluno is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Aluno não encontrado!')
-    curso_existe = obter_ou_404(session, Curso, dados.curso_id, "Curso")
     aluno.nome = dados.nome
     aluno.idade = dados.idade
     aluno.ativo = dados.ativo
-    aluno.cursos = [curso_existe]
     session.commit()
     return aluno
 

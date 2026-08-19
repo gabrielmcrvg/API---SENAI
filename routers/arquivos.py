@@ -12,7 +12,7 @@ PASTA_UPLOAD.mkdir(exist_ok=True)
 
 TIPOS_PERMITIDOS = {"image/jpeg", "image/png"}
 
-TAMANHO_MAXIMO = 5 * 1024 * 1024
+TAMANHO_MAXIMO = 5 * 1024 * 1024 # 5 MB
 
 @router.post("/uploads", status_code=status.HTTP_201_CREATED)
 def uploads(arquivo: UploadFile, usuario: UsuarioAtual):
