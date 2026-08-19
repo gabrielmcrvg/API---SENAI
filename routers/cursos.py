@@ -21,7 +21,7 @@ cursos = [
 ]
 
 @router.get("",response_model=list[CursoResposta])
-def listar_cursos(session: SessionDep, pag: Paginacao =Depends()):
+def listar_cursos(session: SessionDep, usuario: UsuarioAtual, pag: Paginacao = Depends()):
         return session.query(Curso).offset(pag.skip).limit(pag.limit).all()
     
 @router.get("/{curso_id}", response_model=CursoComAlunos)
@@ -31,7 +31,7 @@ def buscar_curso(curso_id: int, session: SessionDep, usuario: UsuarioAtual):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curso não encontrado!")
         return curso
 
-@router.post("/{curso_id}", response_model=list[CursoResposta], status_code=201)
+@router.post("", response_model=list[CursoResposta], status_code=201)
 def criar_curso(dados: list[CursoEntrada], session: SessionDep, usuario: AdminAtual):
         cursos = [Curso(**d.model_dump()) for d in dados]
         session.add_all(cursos)
@@ -42,7 +42,7 @@ def criar_curso(dados: list[CursoEntrada], session: SessionDep, usuario: AdminAt
 def deletar_curso(curso_id: int, session: SessionDep, usuario: AdminAtual):
         curso = session.get(Curso, curso_id)
         if curso is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Curso inexistente!")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail= "Curso inexistente!")
         if curso.alunos:
             raise HTTPException(status_code=409, detail="O curso possui alunos matriculados!")
         session.delete(curso)

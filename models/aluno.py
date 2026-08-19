@@ -11,4 +11,5 @@ class Aluno(Base):
     nome: Mapped[str]
     idade: Mapped[int]
     ativo: Mapped[bool] = mapped_column(default=True)
+    foto: Mapped[str | None] = mapped_column(default=None)
     cursos: Mapped[list["Curso"]]= relationship(secondary=matriculas, back_populates="alunos")

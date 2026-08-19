@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from pathlib import Path
+import shutil
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from database import SessionDep
 from dependencias import Paginacao
 from excecoes import RecursoNaoEncontrado
@@ -11,14 +14,18 @@ from seguranca import AdminAtual, UsuarioAtual
 
 router = APIRouter(prefix='/alunos', tags=['Alunos'])
 
+PASTA_UPLOAD = Path("uploads")
+
+PASTA_UPLOAD.mkdir(exist_ok=True)
+
 # =-= GET =-=
 
 @router.get('/listar_alunos', response_model=list[AlunoResposta])
-def listar_alunos(session: SessionDep, pag: Paginacao = Depends(), ativo: bool | None = None):
+def listar_alunos(session: SessionDep, usuario: UsuarioAtual, pag: Paginacao = Depends(), ativo: bool | None = None):
     query = session.query(Aluno)
     if ativo is not None:
         query = query.filter(Aluno.ativo == ativo)
-    return session.query(Aluno).offset(pag.skip).limit(pag.limit).all()
+    return query.offset(pag.skip).limit(pag.limit).all()
 
 @router.get('/{aluno_id}', response_model=AlunoResposta)
 def buscar_aluno(session: SessionDep, aluno_id: int, usuario: UsuarioAtual):
@@ -47,6 +54,18 @@ def criar_alunos_em_lote(session: SessionDep, curso_id: int, dados: MatriculaEmL
     session.add_all(alunos)
     session.commit()
     return alunos
+
+@router.post("/{aluno_id}/foto")
+def upload_foto(aluno_id: int, arquivo: UploadFile, session: SessionDep, usuario: AdminAtual):
+    aluno = obter_ou_404(session, Aluno, aluno_id, "Aluno")
+    nome_seguro = Path(arquivo.filename).name if arquivo.filename else "sem_nome"
+    nome = f"aluno_{aluno_id}_{nome_seguro}"
+    destino = PASTA_UPLOAD/nome
+    with open(destino, "wb") as buffer:
+        shutil.copyfileobj(arquivo.file, buffer)
+    aluno.foto = str(destino)
+    session.commit()
+    return {"aluno": aluno.nome, "foto": aluno.foto}
 
 # =-= PUT =-= TROCA TODOS DADOS
 

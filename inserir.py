@@ -4,7 +4,10 @@ from models.curso import Curso
 
 session = SessionLocal()
 
-novo_aluno = Aluno(nome="Gabriel", idade=23, curso_id=3)
+curso_existe = session.get(Curso, 3)
+novo_aluno = Aluno(nome="Gabriel", idade=23)
+if curso_existe is not None:
+    novo_aluno.cursos.append(curso_existe)
 session.add(novo_aluno)
 session.commit()
 

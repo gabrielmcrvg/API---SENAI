@@ -8,4 +8,4 @@ class Curso(Base):
     id: Mapped[int] = mapped_column(primary_key=True) # PK
     nome: Mapped[str]
     carga_horaria: Mapped[int]
-    alunos: Mapped[list["Aluno"]]= relationship(secondary=matriculas, back_populates="cursos")
+    alunos: Mapped[list["Aluno"]]= relationship(secondary=matriculas, back_populates="cursos") # type: ignore

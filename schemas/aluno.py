@@ -10,6 +10,7 @@ class AlunoEntradaLote(BaseModel):
     nome: str = Field(min_length=3)
     idade: int = Field(ge=16)
     ativo: bool = True   
+    
 class MatriculaEmLote(BaseModel):
     alunos: list[AlunoEntradaLote]
 
